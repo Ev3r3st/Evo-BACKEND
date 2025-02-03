@@ -18,6 +18,11 @@ export class UserService {
     return this.userRepository.findOne({ where: { id } });
   }
 
+  // Metoda pro vyhledání všech uživatelů
+  async findAll(): Promise<User[]> {
+    return this.userRepository.find();
+  }
+
   // Metoda pro registraci nového uživatele
   async register(userData: Partial<User>): Promise<User> {
     // Kontrola, zda uživatel již neexistuje

@@ -3,7 +3,9 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  OneToMany,
 } from 'typeorm';
+import { Goal } from '../goal/goal.entity';
 
 @Entity('users')
 export class User {
@@ -27,4 +29,8 @@ export class User {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  // Vztah na Goal: Jeden uživatel má více cílů
+  @OneToMany(() => Goal, (goal) => goal.user)
+  goals: Goal[];
 }

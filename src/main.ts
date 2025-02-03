@@ -7,7 +7,10 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Povolení CORS pro přístup z frontendu
-  app.enableCors();
+  app.enableCors({
+    origin: 'http://localhost:3000', // URL vašeho frontendu
+    credentials: true, // Povolení cookies
+  });
 
   // Nastavení globální validace
   app.useGlobalPipes(new ValidationPipe());
