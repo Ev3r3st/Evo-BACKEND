@@ -1,41 +1,42 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { GoalModule } from './goal/goal.module';
 
 @Module({
   imports: [
-    // Load .env variables globally (e.g., DB credentials)
-    ConfigModule.forRoot({ isGlobal: true }),
-
-    // Database connection settings
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT, 10) || 4001,
-      username: process.env.DB_USERNAME || 'evo_admin',
-      password: process.env.DB_PASSWORD || 'evo_admin',
-      database: process.env.DB_NAME || 'evo_database',
-
-      // Use either autoLoadEntities or an explicit list of entities
-      autoLoadEntities: true,
-
-      // Enable synchronization for development (DEV) to auto-create/update tables
-      synchronize: process.env.TYPEORM_SYNC === 'true',
-      // For production, use migrations instead of synchronize
-      // synchronize: false
+    ConfigModule.forRoot({
+      isGlobal: true,
     }),
-
-    // Other modules
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => {
+        console.log('DB_HOST:', configService.get<string>('DB_HOST'));
+        console.log('DB_PORT:', configService.get<number>('DB_PORT'));
+        console.log('DB_USERNAME:', configService.get<string>('DB_USERNAME'));
+        console.log('DB_PASSWORD:', configService.get<string>('DB_PASSWORD'));
+        console.log('DB_NAME:', configService.get<string>('DB_NAME'));
+        return {
+          type: 'postgres',
+          host: configService.get<string>('DB_HOST'),
+          port: configService.get<number>('DB_PORT'),
+          username: configService.get<string>('DB_USERNAME'),
+          password: configService.get<string>('DB_PASSWORD'),
+          database: configService.get<string>('DB_NAME'),
+          autoLoadEntities: true,
+          synchronize: false,
+        };
+      },
+      inject: [ConfigService],
+    }),
     UserModule,
     AuthModule,
     GoalModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [],
+  providers: [],
 })
 export class AppModule {}
+// Compare this snippet from SERVER/Evo-BACKEND/src/main.ts:

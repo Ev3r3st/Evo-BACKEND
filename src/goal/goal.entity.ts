@@ -13,7 +13,7 @@ export class Goal {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ nullable: true })
   goal_name: string;
 
   @Column()
