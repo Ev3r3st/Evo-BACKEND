@@ -1,33 +1,31 @@
 import { Injectable, ConflictException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User } from './user.entity';
+import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
+import { User } from '@prisma/client';
 
 @Injectable()
 export class UserService {
   constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-    private readonly configService: ConfigService, // Přidání ConfigService
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
   ) {}
 
-  // Metoda pro vyhledání uživatele podle ID
-  async findById(id: number): Promise<User> {
-    return this.userRepository.findOne({ where: { id } });
+  async findById(id: number): Promise<User | null> {
+    return this.prisma.user.findUnique({
+      where: { id },
+    });
   }
 
-  // Metoda pro vyhledání všech uživatelů
   async findAll(): Promise<User[]> {
-    return this.userRepository.find();
+    return this.prisma.user.findMany();
   }
 
-  // Metoda pro registraci nového uživatele
   async register(userData: Partial<User>): Promise<User> {
-    // Kontrola, zda uživatel již neexistuje
-    const existingUser = await this.userRepository.findOne({
-      where: [{ username: userData.username }, { email: userData.email }],
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ username: userData.username }, { email: userData.email }],
+      },
     });
 
     if (existingUser) {
@@ -36,23 +34,23 @@ export class UserService {
       );
     }
 
-    // Hashování hesla
     const saltRounds =
       this.configService.get<number>('BCRYPT_SALT_ROUNDS') || 10;
     const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
 
-    // Vytvoření nového uživatele
-    const newUser = this.userRepository.create({
-      ...userData,
-      password: hashedPassword,
+    return this.prisma.user.create({
+      data: {
+        username: userData.username,
+        email: userData.email,
+        password: hashedPassword,
+        fullname: userData.fullname,
+        address: userData.address,
+      },
     });
-
-    return this.userRepository.save(newUser);
   }
 
-  // Metoda pro validaci uživatele při přihlášení
   async validateUser(username: string, password: string): Promise<User | null> {
-    const user = await this.userRepository.findOne({ where: { username } });
+    const user = await this.prisma.user.findUnique({ where: { username } });
     if (user && (await bcrypt.compare(password, user.password))) {
       return user;
     }

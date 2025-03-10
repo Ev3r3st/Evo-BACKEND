@@ -1,16 +1,14 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
 import { UserModule } from '../user/user.module';
-import { User } from '../user/user.entity';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
     UserModule,
     PassportModule.register({ defaultStrategy: 'jwt' }), // Nastavení výchozí strategie
     JwtModule.registerAsync({
@@ -20,7 +18,7 @@ import { User } from '../user/user.entity';
       }),
     }),
   ],
-  providers: [AuthService, JwtStrategy], // Registrace JwtStrategy
+  providers: [AuthService, JwtStrategy, PrismaService], // Registrace JwtStrategy a PrismaService
   controllers: [AuthController],
   exports: [AuthService],
 })

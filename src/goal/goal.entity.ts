@@ -1,3 +1,4 @@
+/*
 import {
   Entity,
   Column,
@@ -47,3 +48,4 @@ export class Goal {
   @UpdateDateColumn()
   updated_at: Date;
 }
+*/

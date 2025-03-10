@@ -3,8 +3,9 @@ import { GoalService } from './goal.service';
 import { CreateGoalDto } from './dto/create-goal.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Request } from 'express';
-import { User } from '../user/user.entity';
+import { User } from '@prisma/client';
 import { ApiBearerAuth } from '@nestjs/swagger';
+
 @ApiBearerAuth()
 @Controller('api/goals')
 @UseGuards(JwtAuthGuard)
