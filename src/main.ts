@@ -23,6 +23,7 @@ async function bootstrap() {
     .setTitle('API for Evo aplikace pro osobní rozvoj a dosažení cílů')
     .setDescription('API for user registration and login')
     .setVersion('1.0')
+
     .addBearerAuth() // Přidání možnosti JWT autentizace
     .build();
 

@@ -8,5 +8,8 @@ export interface JWTUserData {
 }
 
 export interface RequestWithUser extends Request {
-  user: JWTUserData;
+  user: {
+    sub: number;
+    username: string;
+  };
 }

@@ -51,7 +51,7 @@ export class GoalService {
     try {
       // ===== Pro simulaci dalšího dne: =====
       // Odkomentuj následující řádek a zakomentuj řádek s aktuálním datem.
-      //const today = new Date('2025-07-12T00:00:00Z'); // simulace dalšího dne
+      //const today = new Date('2025-03-12T00:00:00Z'); // simulace dalšího dne
 
       // Použij aktuální datum (pro produkci nebo normální testování):
       const today = new Date();

@@ -29,7 +29,7 @@ export class GoalController {
     },
   ) {
     return this.goalService.createGoal(
-      req.user.userId,
+      req.user.sub, // nyní používáme sub
       body.goal_name,
       body.duration,
       body.daily_action,
@@ -40,7 +40,7 @@ export class GoalController {
 
   @Get('goals')
   async getGoals(@Req() req: RequestWithUser) {
-    return this.goalService.findGoalsByUserId(req.user.userId);
+    return this.goalService.findGoalsByUserId(req.user.sub);
   }
 
   @Post('progress/:goalId/complete')
@@ -48,11 +48,11 @@ export class GoalController {
     @Req() req: RequestWithUser,
     @Param('goalId') goalId: string,
   ) {
-    return this.goalService.completeDailyTasks(req.user.userId, +goalId);
+    return this.goalService.completeDailyTasks(req.user.sub, +goalId);
   }
 
   @Get('progress')
   async getUserProgress(@Req() req: RequestWithUser) {
-    return this.goalService.getUserProgress(req.user.userId);
+    return this.goalService.getUserProgress(req.user.sub);
   }
 }

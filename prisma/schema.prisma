@@ -49,3 +49,20 @@ model Progress {
   user User @relation(fields: [userId], references: [id])
   goal Goal @relation(fields: [goalId], references: [id])
 }
+
+model Course {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String
+  lessons     Lesson[]
+}
+
+model Lesson {
+  id        Int    @id @default(autoincrement())
+  title     String
+  subtitle  String?
+  content   String
+  duration  Int
+  courseId  Int
+  course    Course @relation(fields: [courseId], references: [id])
+}
