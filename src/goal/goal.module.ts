@@ -4,8 +4,8 @@ import { GoalController } from './goal.controller';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Module({
-  providers: [GoalService, PrismaService],
   controllers: [GoalController],
+  providers: [GoalService, PrismaService],
   exports: [GoalService],
 })
 export class GoalModule {}

@@ -17,21 +17,35 @@ model User {
   address   String?
   createdAt DateTime @default(now())
   goals     Goal[]
+  progress Progress[]
 }
 
 model Goal {
-  id                 Int     @id @default(autoincrement())
-  goal_name          String?
-  reason            String
-  destination       String
-  new_self         String
-  daily_action     String
-  daily_learning   String
-  daily_visualization String
-  duration         Int
-  userId           Int
-  user             User    @relation(fields: [userId], references: [id])
-  created_at       DateTime @default(now())
-  updated_at       DateTime @updatedAt
+  id                  Int      @id @default(autoincrement())
+  goal_name           String
+  reason              String?
+  destination         String?
+  new_self            String?
+  daily_action        String?
+  daily_learning      String?
+  daily_visualization String?
+  duration            Int
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id])
+  progress  Progress[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 }
 
+model Progress {
+  id                 Int      @id @default(autoincrement())
+  userId             Int
+  goalId             Int
+  completedDays      Int      @default(0)
+  lastCompletionDate DateTime?
+  streak             Int      @default(0)
+
+  user User @relation(fields: [userId], references: [id])
+  goal Goal @relation(fields: [goalId], references: [id])
+}
