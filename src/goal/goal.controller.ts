@@ -1,9 +1,8 @@
-import { Controller, Post, Body, UseGuards, Req } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Req } from '@nestjs/common';
 import { GoalService } from './goal.service';
 import { CreateGoalDto } from './dto/create-goal.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { Request } from 'express';
-import { User } from '@prisma/client';
+import { RequestWithUser } from '../auth/request-with-user.interface';
 import { ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiBearerAuth()
@@ -13,8 +12,16 @@ export class GoalController {
   constructor(private readonly goalService: GoalService) {}
 
   @Post()
-  async createGoal(@Body() createGoalDto: CreateGoalDto, @Req() req: Request) {
-    const user = req.user as User; // JWT middleware nastaví uživatele
-    return this.goalService.createGoal(createGoalDto, user);
+  async createGoal(
+    @Body() createGoalDto: CreateGoalDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.goalService.createGoal(createGoalDto, req.user.userId);
+  }
+
+  @Get()
+  async getGoals(@Req() req: RequestWithUser) {
+    console.log('Přihlášený uživatel:', req.user.userId); // Debug log
+    return this.goalService.findGoalsByUserId(req.user.userId);
   }
 }
