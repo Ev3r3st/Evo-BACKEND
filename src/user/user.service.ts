@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 import { User } from '@prisma/client';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UserService {
@@ -55,5 +56,42 @@ export class UserService {
       return user;
     }
     return null;
+  }
+
+  // Aktualizace profilu s ověřením uniqueness emailu (a volitelně username)
+  async updateUserProfile(
+    userId: number,
+    updateUserDto: UpdateUserDto,
+  ): Promise<User> {
+    // Kontrola, zda nový email již není obsazen (mimo aktuálního uživatele)
+    if (updateUserDto.email) {
+      const existingUserWithEmail = await this.prisma.user.findFirst({
+        where: {
+          email: updateUserDto.email,
+          NOT: { id: userId },
+        },
+      });
+      if (existingUserWithEmail) {
+        throw new ConflictException('Email je již obsazen.');
+      }
+    }
+
+    // Případně kontrola uniqueness uživatelského jména, pokud to potřebuješ
+    if (updateUserDto.username) {
+      const existingUserWithUsername = await this.prisma.user.findFirst({
+        where: {
+          username: updateUserDto.username,
+          NOT: { id: userId },
+        },
+      });
+      if (existingUserWithUsername) {
+        throw new ConflictException('Uživatelské jméno je již obsazeno.');
+      }
+    }
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: updateUserDto,
+    });
   }
 }

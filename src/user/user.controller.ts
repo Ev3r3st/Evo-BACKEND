@@ -1,7 +1,14 @@
-import { Controller, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, UseGuards, Put, Body, Req } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UserService } from './user.service';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { Request as ExpressRequest } from 'express';
+
+// Rozšířený typ Request, abychom mohli přistupovat k vlastnosti user
+interface RequestWithUser extends ExpressRequest {
+  user: any;
+}
 
 @ApiBearerAuth()
 @ApiTags('users')
@@ -11,8 +18,8 @@ export class UserController {
 
   @UseGuards(JwtAuthGuard)
   @Get('/profile')
-  async getProfile(@Request() req) {
-    const userId = req.user.sub; // ID uživatele získáme z payloadu tokenu
+  async getProfile(@Req() req: RequestWithUser) {
+    const userId = req.user.sub; // konzistentně používáme "sub" z JWT
     return this.userService.findById(userId);
   }
 
@@ -20,5 +27,15 @@ export class UserController {
   @Get('/')
   async getAllUsers() {
     return this.userService.findAll();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('profile')
+  async updateUserProfile(
+    @Body() userData: UpdateUserDto,
+    @Req() req: RequestWithUser,
+  ) {
+    const userId = req.user.sub; // používáme "sub" jako ID uživatele
+    return this.userService.updateUserProfile(userId, userData);
   }
 }
