@@ -1,11 +1,17 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { UpdateGoalDto } from './dto/update-goal.dto';
 
 @Injectable()
 export class GoalService {
   constructor(private readonly prisma: PrismaService) {}
 
-  // 1. Vytvoření nového cíle
+  // 1) Vytvoření nového cíle
   async createGoal(
     userId: number,
     goalName: string,
@@ -35,7 +41,7 @@ export class GoalService {
     }
   }
 
-  // 2. Načtení všech cílů přihlášeného uživatele
+  // 2) Načtení všech cílů přihlášeného uživatele
   async findGoalsByUserId(userId: number) {
     try {
       return await this.prisma.goal.findMany({
@@ -46,16 +52,10 @@ export class GoalService {
     }
   }
 
-  // 3. Dokončení denních úkolů (uloží do tabulky Progress)
+  // 3) Dokončení denních úkolů (zapisuje se do tabulky "progress")
   async completeDailyTasks(userId: number, goalId: number) {
     try {
-      // ===== Pro simulaci dalšího dne: =====
-      // Odkomentuj následující řádek a zakomentuj řádek s aktuálním datem.
-      //const today = new Date('2025-03-12T00:00:00Z'); // simulace dalšího dne
-
-      // Použij aktuální datum (pro produkci nebo normální testování):
       const today = new Date();
-
       const existingProgress = await this.prisma.progress.findFirst({
         where: { userId, goalId },
       });
@@ -70,7 +70,7 @@ export class GoalService {
           return existingProgress;
         }
 
-        // Rozdíl ve dnech mezi dnes a posledním splněným dnem
+        // Výpočet rozdílu ve dnech
         const diffInDays = lastDate
           ? Math.floor(
               (today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24),
@@ -81,9 +81,10 @@ export class GoalService {
         if (diffInDays === 1) {
           newStreak = existingProgress.streak + 1;
         } else {
-          newStreak = 1; // reset streak, pokud den vynechal
+          newStreak = 1; // reset streak
         }
 
+        // Aktualizace progressu
         return await this.prisma.progress.update({
           where: { id: existingProgress.id },
           data: {
@@ -109,7 +110,7 @@ export class GoalService {
     }
   }
 
-  // 4. Získání veškerého progressu pro přihlášeného uživatele
+  // 4) Načtení progressu pro přihlášeného uživatele
   async getUserProgress(userId: number) {
     try {
       return await this.prisma.progress.findMany({
@@ -117,6 +118,72 @@ export class GoalService {
       });
     } catch (error) {
       throw new InternalServerErrorException('Failed to fetch progress');
+    }
+  }
+
+  // 5) Update cíle podle ID
+  async updateGoal(userId: number, goalId: number, updateGoalDto: UpdateGoalDto) {
+    try {
+      // Nejdřív si cíl najdeme, abychom ověřili vlastnictví
+      const existingGoal = await this.prisma.goal.findUnique({
+        where: { id: goalId },
+      });
+
+      if (!existingGoal) {
+        throw new NotFoundException(`Cíl s ID ${goalId} nenalezen`);
+      }
+
+      // Kontrola, jestli patří přihlášenému uživateli
+      if (existingGoal.userId !== userId) {
+        throw new ForbiddenException(
+          'Nemáte oprávnění upravovat tento cíl (patří jinému uživateli).',
+        );
+      }
+
+      // Proveď update
+      return await this.prisma.goal.update({
+        where: { id: goalId },
+        data: {
+          ...updateGoalDto,
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to update goal');
+    }
+  }
+
+  // 6) Získání jednoho cíle podle ID s kontrolou uživatele
+  async findGoalById(userId: number, goalId: number) {
+    try {
+      const goal = await this.prisma.goal.findUnique({
+        where: { id: goalId },
+      });
+
+      if (!goal) {
+        throw new NotFoundException(`Cíl s ID ${goalId} nebyl nalezen`);
+      }
+
+      if (goal.userId !== userId) {
+        throw new ForbiddenException(
+          'Nemáte oprávnění zobrazit tento cíl (patří jinému uživateli).',
+        );
+      }
+
+      return goal;
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Chyba při načítání cíle');
     }
   }
 }

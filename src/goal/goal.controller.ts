@@ -6,17 +6,24 @@ import {
   Param,
   UseGuards,
   Req,
+  Put,
+  ParseIntPipe,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { GoalService } from './goal.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RequestWithUser } from '../auth/request-with-user.interface';
+import { UpdateGoalDto } from './dto/update-goal.dto';
 
-@Controller('api')
+@ApiBearerAuth()
+@ApiTags('goals')
 @UseGuards(JwtAuthGuard)
+@Controller('goals')
 export class GoalController {
   constructor(private readonly goalService: GoalService) {}
 
-  @Post('goals')
+  // 1) Vytvoření nového cíle
+  @Post()
   async createGoal(
     @Req() req: RequestWithUser,
     @Body()
@@ -29,7 +36,7 @@ export class GoalController {
     },
   ) {
     return this.goalService.createGoal(
-      req.user.sub, // nyní používáme sub
+      req.user.sub,
       body.goal_name,
       body.duration,
       body.daily_action,
@@ -38,21 +45,43 @@ export class GoalController {
     );
   }
 
-  @Get('goals')
+  // 2) Načtení všech cílů přihlášeného uživatele
+  @Get()
   async getGoals(@Req() req: RequestWithUser) {
     return this.goalService.findGoalsByUserId(req.user.sub);
   }
 
+  // 3) Dokončení denních úkolů (progress)
   @Post('progress/:goalId/complete')
   async completeDailyTasks(
     @Req() req: RequestWithUser,
-    @Param('goalId') goalId: string,
+    @Param('goalId', ParseIntPipe) goalId: number,
   ) {
-    return this.goalService.completeDailyTasks(req.user.sub, +goalId);
+    return this.goalService.completeDailyTasks(req.user.sub, goalId);
   }
 
+  // 4) Načtení progressu uživatele
   @Get('progress')
   async getUserProgress(@Req() req: RequestWithUser) {
     return this.goalService.getUserProgress(req.user.sub);
+  }
+
+  // 5) Update cíle podle ID
+  @Put(':goalId')
+  async updateGoal(
+    @Req() req: RequestWithUser,
+    @Param('goalId', ParseIntPipe) goalId: number,
+    @Body() updateGoalDto: UpdateGoalDto,
+  ) {
+    return this.goalService.updateGoal(req.user.sub, goalId, updateGoalDto);
+  }
+
+  // 6) Získání jednoho cíle podle ID
+  @Get(':goalId')
+  async getGoalById(
+    @Req() req: RequestWithUser,
+    @Param('goalId', ParseIntPipe) goalId: number,
+  ) {
+    return this.goalService.findGoalById(req.user.sub, goalId);
   }
 }
