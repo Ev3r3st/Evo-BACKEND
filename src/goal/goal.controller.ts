@@ -33,6 +33,9 @@ export class GoalController {
       daily_action: string;
       daily_learning: string;
       daily_visualization: string;
+      reason?: string;
+      destination?: string;
+      new_self?: string;
     },
   ) {
     return this.goalService.createGoal(
@@ -42,6 +45,9 @@ export class GoalController {
       body.daily_action,
       body.daily_learning,
       body.daily_visualization,
+      body.reason,
+      body.destination,
+      body.new_self,
     );
   }
 

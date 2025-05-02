@@ -19,6 +19,9 @@ export class GoalService {
     dailyAction: string,
     dailyLearning: string,
     dailyVisualization: string,
+    reason?: string,
+    destination?: string,
+    newSelf?: string,
   ) {
     try {
       return await this.prisma.goal.create({
@@ -28,15 +31,16 @@ export class GoalService {
           daily_action: dailyAction,
           daily_learning: dailyLearning,
           daily_visualization: dailyVisualization,
-          reason: null,
-          destination: null,
-          new_self: null,
+          reason: reason || null,
+          destination: destination || null,
+          new_self: newSelf || null,
           user: {
             connect: { id: userId },
           },
         },
       });
     } catch (error) {
+      console.error('Failed to create goal:', error);
       throw new InternalServerErrorException('Failed to create goal');
     }
   }

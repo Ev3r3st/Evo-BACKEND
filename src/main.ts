@@ -8,7 +8,10 @@ async function bootstrap() {
 
   // Povolení CORS pro přístup z frontendu
   app.enableCors({
-    origin: 'http://localhost:3000', // URL vašeho frontendu
+    origin: [
+      'http://localhost:3000', // lokální vývojový frontend
+      'https://evo-theta.vercel.app', // nasazený frontend na Vercelu
+    ],
     credentials: true, // Povolení cookies
   });
 

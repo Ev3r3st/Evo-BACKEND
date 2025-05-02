@@ -2,6 +2,7 @@ import {
   Injectable,
   ConflictException,
   InternalServerErrorException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from '../auth/dto/register.dto';
@@ -9,6 +10,7 @@ import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '@prisma/client';
+import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
@@ -61,10 +63,73 @@ export class AuthService {
   }
 
   // Metoda pro přihlášení
-  async login(user: User): Promise<{ access_token: string }> {
-    const payload = { username: user.username, sub: user.id };
+  async login(loginDto: LoginDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { username: loginDto.username },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const isPasswordValid = await bcrypt.compare(
+      loginDto.password,
+      user.password,
+    );
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const tokens = await this.generateTokens(user.id);
     return {
-      access_token: this.jwtService.sign(payload),
+      ...tokens,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        fullname: user.fullname,
+      },
     };
+  }
+
+  async refreshToken(refreshToken: string) {
+    try {
+      const payload = await this.jwtService.verifyAsync(refreshToken, {
+        secret: process.env.JWT_REFRESH_SECRET,
+      });
+
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+      });
+
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      return this.generateTokens(user.id);
+    } catch (error) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+  }
+
+  private async generateTokens(userId: number) {
+    const [accessToken, refreshToken] = await Promise.all([
+      this.jwtService.signAsync(
+        { sub: userId },
+        {
+          secret: process.env.JWT_SECRET,
+          expiresIn: '30d', // Access token vyprší za 15 minut
+        },
+      ),
+      this.jwtService.signAsync(
+        { sub: userId },
+        {
+          secret: process.env.JWT_REFRESH_SECRET,
+          expiresIn: '70d', // Refresh token vyprší za 7 dní
+        },
+      ),
+    ]);
+
+    return { accessToken, refreshToken };
   }
 }

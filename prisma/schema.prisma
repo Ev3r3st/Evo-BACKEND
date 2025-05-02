@@ -9,15 +9,17 @@ datasource db {
 
 
 model User {
-  id        Int      @id @default(autoincrement())
-  username  String   @unique
-  email     String   @unique
-  password  String
-  fullname  String?
-  address   String?
-  createdAt DateTime @default(now())
-  goals     Goal[]
-  progress Progress[]
+  id              Int               @id @default(autoincrement())
+  username        String            @unique
+  email           String            @unique
+  password        String
+  fullname        String?
+  address         String?
+  createdAt       DateTime          @default(now())
+  goals           Goal[]
+  progress        Progress[]
+  courses         UserCourse[]
+  completedLessons CompletedLesson[]
 }
 
 model Goal {
@@ -54,15 +56,48 @@ model Course {
   id          Int       @id @default(autoincrement())
   name        String
   description String
+  image       String?
   lessons     Lesson[]
+  users       UserCourse[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model Lesson {
-  id        Int    @id @default(autoincrement())
-  title     String
-  subtitle  String?
-  content   String
-  duration  Int
-  courseId  Int
-  course    Course @relation(fields: [courseId], references: [id])
+  id          Int       @id @default(autoincrement())
+  title       String
+  subtitle    String?
+  content     String
+  duration    Int
+  order       Int       @default(0)
+  courseId    Int
+  course      Course    @relation(fields: [courseId], references: [id])
+  completedBy CompletedLesson[]
+}
+
+model UserCourse {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  courseId    Int
+  progress    Int       @default(0)  // Procento dokončení
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  user        User      @relation(fields: [userId], references: [id])
+  course      Course    @relation(fields: [courseId], references: [id])
+  
+  @@unique([userId, courseId])
+}
+
+// Nový model pro sledování dokončených lekcí uživatele
+model CompletedLesson {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  lessonId  Int
+  courseId  Int      // Pro snadnější dotazování
+  completedAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id])
+  lesson    Lesson   @relation(fields: [lessonId], references: [id])
+  
+  @@unique([userId, lessonId])
 }
